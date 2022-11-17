@@ -1,10 +1,34 @@
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var host = CreateHostBuilder(args).Build();
+            using (var scope = host.Services.CreateScope())
+            {
+                var service = scope.ServiceProvider;
+                var loggerFactory = service.GetRequiredService<ILoggerFactory>();
+
+                try
+                {
+                    var context = service.GetRequiredService<StoreContext>();
+                    await context.Database.MigrateAsync();
+                }
+                catch(Exception ex)
+                {
+                    var loggerFactory1 = LoggerFactory.Create(lb => lb.AddConsole());
+                    var logger = loggerFactory.CreateLogger<Program>();
+                    logger.LogError(ex, "An error occured during migration.");
+
+
+                }
+            }
+
+            host.Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
